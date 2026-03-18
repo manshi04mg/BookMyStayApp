@@ -1,84 +1,63 @@
 
+
 import java.util.*;
 
-// Reservation class
-class Reservation {
+// Service class
+class Service {
 
-    String guestName;
-    String roomType;
+    String serviceName;
+    int cost;
 
-    Reservation(String guestName,String roomType) {
-        this.guestName = guestName;
-        this.roomType = roomType;
+    Service(String serviceName,int cost) {
+        this.serviceName = serviceName;
+        this.cost = cost;
+    }
+
+    void display() {
+        System.out.println(serviceName+" : "+cost);
     }
 }
 
-// Inventory class
-class RoomInventory {
+// Add-On Service Manager
+class AddOnServiceManager {
 
-    HashMap<String,Integer> rooms;
+    HashMap<String,List<Service>> serviceMap;
 
-    RoomInventory() {
+    AddOnServiceManager() {
 
-        rooms = new HashMap<>();
-
-        rooms.put("Single Room",2);
-        rooms.put("Double Room",1);
-        rooms.put("Suite Room",1);
+        serviceMap = new HashMap<>();
     }
 
-    int getAvailability(String type) {
-        return rooms.get(type);
+    // Add service to reservation
+    void addService(String reservationId, Service service) {
+
+        serviceMap
+                .computeIfAbsent(reservationId,
+                        k->new ArrayList<>())
+                .add(service);
     }
 
-    void decreaseRoom(String type) {
+    // Display services
+    void showServices(String reservationId) {
 
-        rooms.put(type, rooms.get(type)-1);
-    }
-}
+        System.out.println("\nServices for Reservation "
+                + reservationId);
 
-// Allocation service
-class RoomAllocationService {
+        int total = 0;
 
-    Set<String> allocatedRooms;
-    HashMap<String,Set<String>> roomMap;
+        List<Service> list =
+                serviceMap.get(reservationId);
 
-    RoomAllocationService() {
+        if(list != null) {
 
-        allocatedRooms = new HashSet<>();
-        roomMap = new HashMap<>();
-    }
+            for(Service s : list) {
 
-    void allocate(Reservation r, RoomInventory inv) {
-
-        if(inv.getAvailability(r.roomType) > 0) {
-
-            String roomId =
-                    r.roomType.substring(0,1)
-                            + (allocatedRooms.size()+1);
-
-            if(!allocatedRooms.contains(roomId)) {
-
-                allocatedRooms.add(roomId);
-
-                roomMap
-                        .computeIfAbsent(r.roomType,
-                                k->new HashSet<>())
-                        .add(roomId);
-
-                inv.decreaseRoom(r.roomType);
-
-                System.out.println("Reservation Confirmed");
-                System.out.println("Guest : "+r.guestName);
-                System.out.println("Room Type : "+r.roomType);
-                System.out.println("Room ID : "+roomId);
-                System.out.println();
+                s.display();
+                total += s.cost;
             }
 
-        } else {
-
-            System.out.println("No rooms available for "
-                    + r.guestName);
+            System.out.println("Total Add-On Cost : "
+                    + total);
         }
     }
 }
@@ -89,26 +68,22 @@ public class BookMyStayApp {
     public static void main(String[] args) {
 
         System.out.println("Book My Stay App");
-        System.out.println("Version : 6.1");
+        System.out.println("Version : 7.1");
 
-        Queue<Reservation> queue =
-                new LinkedList<>();
+        AddOnServiceManager manager =
+                new AddOnServiceManager();
 
-        queue.add(new Reservation("Amit","Single Room"));
-        queue.add(new Reservation("Neha","Double Room"));
-        queue.add(new Reservation("Rahul","Single Room"));
+        String reservationId = "R101";
 
-        RoomInventory inventory =
-                new RoomInventory();
+        manager.addService(reservationId,
+                new Service("Breakfast",500));
 
-        RoomAllocationService service =
-                new RoomAllocationService();
+        manager.addService(reservationId,
+                new Service("Airport Pickup",800));
 
-        while(!queue.isEmpty()) {
+        manager.addService(reservationId,
+                new Service("Extra Bed",700));
 
-            Reservation r = queue.poll();
-
-            service.allocate(r,inventory);
-        }
+        manager.showServices(reservationId);
     }
 }
