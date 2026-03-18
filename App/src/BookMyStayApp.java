@@ -1,61 +1,95 @@
 
 import java.util.*;
 
-// Custom Exception
-class InvalidBookingException extends Exception {
+// Reservation class
+class Reservation {
 
-    InvalidBookingException(String message) {
-        super(message);
+    String reservationId;
+    String roomType;
+    String roomId;
+
+    Reservation(String reservationId,
+                String roomType,
+                String roomId) {
+
+        this.reservationId = reservationId;
+        this.roomType = roomType;
+        this.roomId = roomId;
     }
 }
 
 // Inventory class
 class RoomInventory {
 
-    private HashMap<String,Integer> rooms;
+    HashMap<String,Integer> rooms;
 
     RoomInventory() {
 
         rooms = new HashMap<>();
 
-        rooms.put("Single Room",2);
+        rooms.put("Single Room",1);
         rooms.put("Double Room",1);
-        rooms.put("Suite Room",0);
+        rooms.put("Suite Room",1);
     }
 
-    void validateRoom(String type)
-            throws InvalidBookingException {
+    void increaseRoom(String type) {
 
-        if(!rooms.containsKey(type)) {
-
-            throw new InvalidBookingException(
-                    "Invalid Room Type : " + type);
-        }
-
-        if(rooms.get(type) <= 0) {
-
-            throw new InvalidBookingException(
-                    "No rooms available for : " + type);
-        }
+        rooms.put(type,rooms.get(type)+1);
     }
 
-    void bookRoom(String type)
-            throws InvalidBookingException {
+    void displayInventory() {
 
-        validateRoom(type);
+        System.out.println("\nCurrent Inventory:");
 
-        int count = rooms.get(type);
+        for(String r : rooms.keySet()) {
 
-        if(count-1 < 0) {
+            System.out.println(r+" : "
+                    + rooms.get(r));
+        }
+    }
+}
 
-            throw new InvalidBookingException(
-                    "Inventory cannot be negative");
+// Cancellation Service
+class CancellationService {
+
+    HashMap<String,Reservation> bookings;
+    Stack<String> rollbackStack;
+
+    CancellationService() {
+
+        bookings = new HashMap<>();
+        rollbackStack = new Stack<>();
+    }
+
+    void addBooking(Reservation r) {
+
+        bookings.put(r.reservationId,r);
+    }
+
+    void cancelBooking(String id,
+                       RoomInventory inv) {
+
+        if(!bookings.containsKey(id)) {
+
+            System.out.println(
+                    "Cancellation Failed : Invalid ID");
+
+            return;
         }
 
-        rooms.put(type,count-1);
+        Reservation r = bookings.get(id);
 
-        System.out.println("Room booked successfully : "
-                + type);
+        rollbackStack.push(r.roomId);
+
+        inv.increaseRoom(r.roomType);
+
+        bookings.remove(id);
+
+        System.out.println("Booking Cancelled : "
+                + id);
+
+        System.out.println("Released Room ID : "
+                + rollbackStack.peek());
     }
 }
 
@@ -65,27 +99,26 @@ public class BookMyStayApp {
     public static void main(String[] args) {
 
         System.out.println("Book My Stay App");
-        System.out.println("Version : 9.1");
+        System.out.println("Version : 10.1");
 
         RoomInventory inventory =
                 new RoomInventory();
 
-        try {
+        CancellationService service =
+                new CancellationService();
 
-            inventory.bookRoom("Single Room");
+        Reservation r1 =
+                new Reservation("R101",
+                        "Single Room","S1");
 
-            inventory.bookRoom("Suite Room"); // error case
+        service.addBooking(r1);
 
-            inventory.bookRoom("Luxury Room"); // invalid
+        service.cancelBooking("R101",
+                inventory);
 
-        }
+        service.cancelBooking("R200",
+                inventory); // invalid case
 
-        catch(InvalidBookingException e) {
-
-            System.out.println("Booking Failed : "
-                    + e.getMessage());
-        }
-
-        System.out.println("\nSystem running safely...");
+        inventory.displayInventory();
     }
 }
